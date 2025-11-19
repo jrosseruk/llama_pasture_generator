@@ -7,6 +7,7 @@ Creates a pasture scene with fences, grass areas, and llamas
 import sys
 import random
 import os
+import argparse
 import xml.etree.ElementTree as ET
 
 
@@ -46,7 +47,7 @@ def colorize_tree(tree_content, green_shades):
     colored = colored.replace('#218649', green_shades[2])
     return colored
 
-def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138):
+def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138, placement='half'):
     """Generate an SVG pasture texture with llamas"""
 
     # Convert inches to pixels (dpi increased by 44% from 96 to 138)
@@ -267,15 +268,20 @@ def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138):
                     return True
             return False
 
-        # Llamas must be placed on the right side only, below the fence and not in ponds, river, or on buildings
+        # Llamas must be placed below the fence and not in ponds, river, or on buildings
         llama_area_start = fence_y + post_height + 10
         llama_count = 0
         attempts = 0
         max_attempts = num_llamas * 50  # Increased to ensure we get all llamas
 
         while llama_count < num_llamas and attempts < max_attempts:
-            # Only place llamas on the right half of the image
-            x = random.uniform(width * 0.5, width - 40)
+            # Place llamas based on placement mode
+            if placement == 'full':
+                # Full width placement
+                x = random.uniform(40, width - 40)
+            else:
+                # Half width placement (right side only)
+                x = random.uniform(width * 0.5, width - 40)
             y = random.uniform(llama_area_start, height - 60)
             attempts += 1
 
@@ -379,7 +385,9 @@ def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138):
         # Position disco ball at the top center, hanging down
         disco_x = width * 0.5
         disco_y = 0
-        disco_scale = 0.8  # 10x larger than before (was 0.08)
+        # Scale disco ball proportionally to image width
+        # For reference: 10" = 1380px, 20" = 2760px at 138 dpi
+        disco_scale = min(0.8, (width / 1380) * 0.2)
 
         # Disco ball
         svg_parts.append(f'  <g transform="translate({disco_x}, {disco_y}) scale({disco_scale})">')
@@ -393,21 +401,33 @@ def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138):
 
 
 def main():
-    # Get dimensions from user
-    if len(sys.argv) >= 3:
-        width_inches = float(sys.argv[1])
-        height_inches = float(sys.argv[2])
-        num_llamas = int(sys.argv[3]) if len(sys.argv) > 3 else 100
-    else:
+    parser = argparse.ArgumentParser(description='SVG Pasture Texture Generator')
+    parser.add_argument('width', type=float, nargs='?', help='Width in inches')
+    parser.add_argument('height', type=float, nargs='?', help='Height in inches')
+    parser.add_argument('num_llamas', type=int, nargs='?', default=100, help='Number of llamas (default: 100)')
+    parser.add_argument('--placement', choices=['half', 'full'], default='half',
+                        help='Llama placement: "half" for right side only (default), "full" for entire width')
+
+    args = parser.parse_args()
+
+    # Get dimensions from user if not provided
+    if args.width is None or args.height is None:
         print("SVG Pasture Texture Generator")
         print("=" * 40)
         width_inches = float(input("Enter width in inches: "))
         height_inches = float(input("Enter height in inches: "))
         llama_input = input("Enter number of llamas (default 100): ").strip()
         num_llamas = int(llama_input) if llama_input else 100
+        placement_input = input("Enter placement mode (half/full, default half): ").strip().lower()
+        placement = placement_input if placement_input in ['half', 'full'] else 'half'
+    else:
+        width_inches = args.width
+        height_inches = args.height
+        num_llamas = args.num_llamas
+        placement = args.placement
 
     # Generate SVG
-    svg_content = create_pasture_svg(width_inches, height_inches, num_llamas)
+    svg_content = create_pasture_svg(width_inches, height_inches, num_llamas, placement=placement)
 
     # Save to SVG file
     output_file = f"pasture_{width_inches}x{height_inches}_{num_llamas}llamas.svg"
