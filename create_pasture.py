@@ -47,7 +47,7 @@ def colorize_tree(tree_content, green_shades):
     colored = colored.replace('#218649', green_shades[2])
     return colored
 
-def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138, placement='half'):
+def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138, placement='half', show_disco_ball=True):
     """Generate an SVG pasture texture with llamas"""
 
     # Convert inches to pixels (dpi increased by 44% from 96 to 138)
@@ -381,7 +381,7 @@ def create_pasture_svg(width_inches, height_inches, num_llamas=100, dpi=138, pla
         svg_parts.append(f'  </g>')
 
     # Add disco ball hanging from the top center
-    if disco_content:
+    if disco_content and show_disco_ball:
         # Position disco ball at the top center, hanging down
         disco_x = width * 0.5
         disco_y = 0
@@ -407,6 +407,8 @@ def main():
     parser.add_argument('num_llamas', type=int, nargs='?', default=100, help='Number of llamas (default: 100)')
     parser.add_argument('--placement', choices=['half', 'full'], default='half',
                         help='Llama placement: "half" for right side only (default), "full" for entire width')
+    parser.add_argument('--no-disco-ball', action='store_true',
+                        help='Hide the disco ball')
 
     args = parser.parse_args()
 
@@ -427,7 +429,7 @@ def main():
         placement = args.placement
 
     # Generate SVG
-    svg_content = create_pasture_svg(width_inches, height_inches, num_llamas, placement=placement)
+    svg_content = create_pasture_svg(width_inches, height_inches, num_llamas, placement=placement, show_disco_ball=not args.no_disco_ball)
 
     # Save to SVG file
     output_file = f"pasture_{width_inches}x{height_inches}_{num_llamas}llamas.svg"
